@@ -3,7 +3,10 @@ import random
 from cnocr import CnOcr
 from flask import Flask, request, jsonify
 
-
+# 考虑一个问题，生成一个令牌token，标记这是某一次帮战的数据，设定缓存保存的期限，超时删除
+# 一次提交一个token
+# 重置时清除本次token及token下的数据
+# 每次请求api，带着本次帮战的token，获取对应的缓存数据，获取不到则报错
 # data = {
 #     'name': {
 #         'kill': '12',
