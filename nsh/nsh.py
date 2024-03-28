@@ -7,6 +7,11 @@ from flask import Flask, request, jsonify
 # 一次提交一个token
 # 重置时清除本次token及token下的数据
 # 每次请求api，带着本次帮战的token，获取对应的缓存数据，获取不到则报错
+# 记录全局数据的数据结构应该被改善，token作为key，每个token代表一次帮战，value是字典
+# 字典中包含：群龙十人，四项标准前三，全场帮战数据
+# submit新增token，若token已存在则默认覆盖
+# reset删除token
+# 抽奖接口带着token过来，从缓存中获取战绩并进行抽奖
 # data = {
 #     'name': {
 #         'kill': '12',
@@ -24,6 +29,11 @@ PIC_TYPE_OUTPUT = 'output'
 PIC_TYPES = [PIC_TYPE_STRATEGY,
              PIC_TYPE_TREAT,
              PIC_TYPE_OUTPUT]
+TITLE_LEADER = 'leader'
+TITLE_BLADE = 'blade'
+TITLES = [TITLE_LEADER,
+          TITLE_BLADE]
+
 
 def parse_pictures(pic_type):
     global all_data
@@ -57,8 +67,9 @@ def parse_pictures(pic_type):
 def lottery(participants, num_winners=1):
     # 确保获奖者数量不超过参与者数量
     if num_winners > len(participants):
-        raise ValueError("Number of winners cannot be greater than the number of participants.")
-    
+        raise ValueError(
+            "Number of winners cannot be greater than the number of participants.")
+
     winners = random.sample(participants, num_winners)
     return winners
 
@@ -72,7 +83,7 @@ def sort_data_by_key_word(key_word):
             raise KeyError(f"The key_word '{key_word}' is not in the data.")
 
         entries.append(name_data)
-        
+
     # 对条目列表根据key_word_value进行排序
     sorted_entries = sorted(entries, key=lambda x: x[key_word], reverse=True)
     return sorted_entries
@@ -125,11 +136,13 @@ def submit():
     result["takings"] = [entries[0], entries[1], entries[2]]
 
     return jsonify(result)
-    
+
 
 @app.route('/reset', methods=['POST'])
 def reset():
-    pass
+    global all_data
+    all_data = {}
+    return jsonify({'message': f"reset successfully"})
 
 
 @app.route('/battle_token', methods=['GET'])
