@@ -12,14 +12,19 @@ from flask import Flask, request, jsonify
 # submit新增token，若token已存在则默认覆盖
 # reset删除token
 # 抽奖接口带着token过来，从缓存中获取战绩并进行抽奖
-# data = {
-#     'name': {
-#         'kill': '12',
-#         'assist': '12',
-#         'heal': '12万',
-#         'take': '12万',
-#         'blood': '12万',
-#         'damage': '12万',
+# all_data = {
+#     'token-123': {
+#         'leader': 'alfred',
+#         'blade': 'chaos',
+#         'killings': ['alfred', 'chaos', 'ray'],
+#         'buildings': ['alfred', 'jack', 'tom'],
+#         'healings': ['jay', 'tom', 'tim'],
+#         'takings': ['tim', 'tom', 'hum'],
+#         'battle_token_winner': '',
+#         'data': [{
+#             'name': 'alfred',
+#             '123': '123'
+#         }]
 #     }
 # }
 all_data = {}
@@ -34,9 +39,15 @@ TITLE_BLADE = 'blade'
 TITLES = [TITLE_LEADER,
           TITLE_BLADE]
 
-
-def parse_pictures(pic_type):
-    global all_data
+# 一个字典，统计数据
+# data = {
+#     'alfred': {
+#         'name': 'alfred',
+#         'kills': '12',
+#         '...'
+#     }
+# }
+def parse_pictures(data, pic_type):
     directory = f"./{pic_type}/"
     for root, dirs, entries in os.walk(directory):
         for entry in entries:
@@ -49,6 +60,7 @@ def parse_pictures(pic_type):
                 num_1 = res[index+2]['text']
                 num_2 = res[index+3]['text']
                 index = index+5
+                data[name]['name'] = name
                 if pic_type == PIC_TYPE_STRATEGY:
                     all_data[name]['kill'] = num_1
                     all_data[name]['assist'] = num_2
@@ -74,10 +86,9 @@ def lottery(participants, num_winners=1):
     return winners
 
 
-def sort_data_by_key_word(key_word):
+def sort_data_by_key_word(data, key_word):
     entries = []
-    global all_data
-    for key, name_data in all_data.items():
+    for key, name_data in data.items():
         # 检查key_word是否在name_data中
         if key_word not in name_data:
             raise KeyError(f"The key_word '{key_word}' is not in the data.")
@@ -108,75 +119,128 @@ def submit():
     data = request.get_json()
     if not data:
         return jsonify({'error': 'No input data provided'}), 400
+    token = data.get('token')
+    if not token:
+        return jsonify({'error': "token is required"}), 400
     leader = data.get('leader', '')
     blade = data.get('blade', '')
-    excludes = data.get('excludes', '')
-    losts = excludes.split(',')
+    # excludes = data.get('excludes', '')
+    # losts = excludes.split(',')
 
     save_picture(PIC_TYPE_STRATEGY)
     save_picture(PIC_TYPE_TREAT)
     save_picture(PIC_TYPE_OUTPUT)
     global all_data
-    all_data = {}
-    parse_pictures(PIC_TYPE_STRATEGY)
-    parse_pictures(PIC_TYPE_TREAT)
-    parse_pictures(PIC_TYPE_OUTPUT)
+    data = {}
+    parse_pictures(data, PIC_TYPE_STRATEGY)
+    parse_pictures(data, PIC_TYPE_TREAT)
+    parse_pictures(data, PIC_TYPE_OUTPUT)
 
-    result = {
-        "leader": leader,
-        "blade": blade
-    }
-    entries = sort_data_by_key_word(key_word='blood')
-    result["killings"] = [entries[0], entries[1], entries[2]]
-    entries = sort_data_by_key_word(key_word='damage')
-    result["buildings"] = [entries[0], entries[1], entries[2]]
-    entries = sort_data_by_key_word(key_word='heal')
-    result["healings"] = [entries[0], entries[1], entries[2]]
-    entries = sort_data_by_key_word(key_word='take')
-    result["takings"] = [entries[0], entries[1], entries[2]]
+    all_data[token][TITLE_LEADER] = leader
+    all_data[token][TITLE_BLADE] = blade
+    entries = sort_data_by_key_word(data, key_word='blood')
+    all_data[token]["killings"] = [entries[0], entries[1], entries[2]]
+    entries = sort_data_by_key_word(data, key_word='damage')
+    all_data[token]["buildings"] = [entries[0], entries[1], entries[2]]
+    entries = sort_data_by_key_word(data, key_word='heal')
+    all_data[token]["healings"] = [entries[0], entries[1], entries[2]]
+    entries = sort_data_by_key_word(data, key_word='take')
+    all_data[token]["takings"] = [entries[0], entries[1], entries[2]]
+    all_data[token]['data'] = entries
 
-    return jsonify(result)
+    return jsonify(all_data[token])
 
 
 @app.route('/reset', methods=['POST'])
 def reset():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No input data provided'}), 400
+    token = data.get('token')
+    if not token:
+        return jsonify({'error': "token is required"}), 400
+
     global all_data
-    all_data = {}
+    del all_data[token]
     return jsonify({'message': f"reset successfully"})
 
 
-@app.route('/battle_token', methods=['GET'])
+@app.route('/battle_token', methods=['POST'])
 def get_battle_token():
-    pass
-
-
-@app.route('/month_card', methods=['GET'])
-def get_month_card():
-    pass
-
-
-@app.route('/milky_tea', methods=['GET'])
-def get_milky_tea():
-    pass
-
-# 定义一个路由，用于GET请求
-
-
-@app.route('/api/greeting', methods=['GET'])
-def get_greeting():
-    name = request.args.get('name', 'Guest')  # 获取查询参数，如果没有则默认为'Guest'
-    return jsonify({'message': f'Hello, {name}!'})
-
-# 定义一个路由，用于POST请求
-
-
-@app.route('/api/message', methods=['POST'])
-def post_message():
-    data = request.get_json()  # 获取JSON格式的请求数据
+    data = request.get_json()
     if not data:
         return jsonify({'error': 'No input data provided'}), 400
-    message = data.get('message', '')
-    return jsonify({'received_message': message})
+    token = data.get('token')
+    if not token:
+        return jsonify({'error': "token is required"}), 400
+    if token not in all_data:
+        return jsonify({'error': 'upload data, please'}), 400
+    
+    participants = []
+    leader = all_data[token][TITLE_LEADER]
+    if leader:
+        participants.append(leader)
+    blade = all_data[token][TITLE_BLADE]
+    if blade and blade not in participants:
+        participants.append(blade)
+    for name in all_data[token]['killings']:
+        if name not in participants:
+            participants.append(name)
+    for name in all_data[token]['buildings']:
+        if name not in participants:
+            participants.append(name)
+    for name in all_data[token]['healings']:
+        if name not in participants:
+            participants.append(name)
+    for name in all_data[token]['takings']:
+        if name not in participants:
+            participants.append(name)
+    
+    global all_data
+    winner = lottery(participants)
+    all_data[token]['battle_token_winner'] = winner
+    return jsonify({'winner': winner})
+
+
+@app.route('/month_card', methods=['POST'])
+def get_month_card():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No input data provided'}), 400
+    token = data.get('token')
+    if not token:
+        return jsonify({'error': "token is required"}), 400
+    if token not in all_data:
+        return jsonify({'error': 'upload data, please'}), 400
+    
+    participants = []
+    battle_token_winner = all_data[token]['battle_token_winner']
+    data = all_data[token]['data']
+    for d in data:
+        if d['name'] == battle_token_winner:
+            continue
+        participants.append(d['name'])
+    
+    winner = lottery(participants)
+    return jsonify({'winner': winner})
+
+
+@app.route('/milky_tea', methods=['POST'])
+def get_milky_tea():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No input data provided'}), 400
+    token = data.get('token')
+    if not token:
+        return jsonify({'error': "token is required"}), 400
+    if token not in all_data:
+        return jsonify({'error': 'upload data, please'}), 400
+    
+    participants = []
+    for d in all_data[token]['data']:
+        participants.append(d['name'])
+    winners = lottery(participants, num_winners=2)
+    return jsonify({'winners': winners})
 
 
 # 启动Flask应用程序
