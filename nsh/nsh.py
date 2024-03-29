@@ -14,7 +14,7 @@ from flask import Flask, request, jsonify
 # 抽奖接口带着token过来，从缓存中获取战绩并进行抽奖
 # all_data = {
 #     'token-123': {
-#         'leader': 'alfred',
+#         'dragon': 'alfred',
 #         'blade': 'chaos',
 #         'killings': ['alfred', 'chaos', 'ray'],
 #         'buildings': ['alfred', 'jack', 'tom'],
@@ -28,16 +28,26 @@ from flask import Flask, request, jsonify
 #     }
 # }
 all_data = {}
-PIC_TYPE_STRATEGY = 'strategy'
-PIC_TYPE_TREAT = 'treat'
-PIC_TYPE_OUTPUT = 'output'
+PIC_TYPE_STRATEGY = 'strategy' # 战略
+PIC_TYPE_TREAT = 'treat' # 治疗
+PIC_TYPE_DAMAGE = 'damage' # 输出
 PIC_TYPES = [PIC_TYPE_STRATEGY,
              PIC_TYPE_TREAT,
-             PIC_TYPE_OUTPUT]
-TITLE_LEADER = 'leader'
-TITLE_BLADE = 'blade'
-TITLES = [TITLE_LEADER,
-          TITLE_BLADE]
+             PIC_TYPE_DAMAGE]
+HONOR_DRAGON = 'dragon'  # 群龙之首
+HONOR_BLADE = 'blade' # 神锋利刃
+HONOR_INVINCIBLE = 'invincible' # 所向披靡
+HONOR_BRAVE = 'brave' # 骁勇无前
+HONOR_OCCUPY = 'occupy' # 攻城掠地
+HONOR_DOCTOR = 'doctor' # 妙手回春
+HONOR_WING_TIGER = 'wing_tiger' # 与虎添翼
+HONOR_IRON = 'iron' # 铁甲丹心
+HONOR_TRAIN = 'train' # 辎重坚兵
+HONOR_SPEED = 'speed' # 星驰电掣
+HONORS = [HONOR_DRAGON, HONOR_BLADE, HONOR_INVINCIBLE,
+          HONOR_BRAVE, HONOR_OCCUPY, HONOR_DOCTOR,
+          HONOR_WING_TIGER, HONOR_IRON, HONOR_TRAIN,
+          HONOR_SPEED]
 
 # 一个字典，统计数据
 # data = {
@@ -67,7 +77,7 @@ def parse_pictures(data, pic_type):
                 elif pic_type == PIC_TYPE_TREAT:
                     all_data[name]['heal'] = num_1
                     all_data[name]['take'] = num_2
-                elif pic_type == PIC_TYPE_OUTPUT:
+                elif pic_type == PIC_TYPE_DAMAGE:
                     all_data[name]['blood'] = num_1
                     all_data[name]['damage'] = num_2
                 else:
@@ -122,22 +132,38 @@ def submit():
     token = data.get('token')
     if not token:
         return jsonify({'error': "token is required"}), 400
-    leader = data.get('leader', '')
+    dragon = data.get('dragon', '')
     blade = data.get('blade', '')
+    invincible = data.get('invincible', '')
+    brave = data.get('data', '')
+    occupy = data.get('occupy', '')
+    doctor = data.get('doctor', '')
+    wing_tiger = data.get('wing_tiger', '')
+    iron = data.get('iron', '')
+    train = data.get('train', '')
+    speed = data.get('speed', '')
     # excludes = data.get('excludes', '')
     # losts = excludes.split(',')
 
     save_picture(PIC_TYPE_STRATEGY)
     save_picture(PIC_TYPE_TREAT)
-    save_picture(PIC_TYPE_OUTPUT)
+    save_picture(PIC_TYPE_DAMAGE)
     global all_data
     data = {}
     parse_pictures(data, PIC_TYPE_STRATEGY)
     parse_pictures(data, PIC_TYPE_TREAT)
-    parse_pictures(data, PIC_TYPE_OUTPUT)
+    parse_pictures(data, PIC_TYPE_DAMAGE)
 
-    all_data[token][TITLE_LEADER] = leader
-    all_data[token][TITLE_BLADE] = blade
+    all_data[token][HONOR_DRAGON] = dragon
+    all_data[token][HONOR_BLADE] = blade
+    all_data[token][HONOR_INVINCIBLE] = invincible
+    all_data[token][HONOR_BRAVE] = brave
+    all_data[token][HONOR_OCCUPY] = occupy
+    all_data[token][HONOR_DOCTOR] = doctor
+    all_data[token][HONOR_WING_TIGER] = wing_tiger
+    all_data[token][HONOR_IRON] = iron
+    all_data[token][HONOR_TRAIN] = train
+    all_data[token][HONOR_SPEED] = speed
     entries = sort_data_by_key_word(data, key_word='blood')
     all_data[token]["killings"] = [entries[0], entries[1], entries[2]]
     entries = sort_data_by_key_word(data, key_word='damage')
@@ -177,12 +203,16 @@ def get_battle_token():
         return jsonify({'error': 'upload data, please'}), 400
     
     participants = []
-    leader = all_data[token][TITLE_LEADER]
-    if leader:
-        participants.append(leader)
-    blade = all_data[token][TITLE_BLADE]
-    if blade and blade not in participants:
-        participants.append(blade)
+    # dragon = all_data[token][HONOR_DRAGON]
+    # if dragon:
+    #     participants.append(dragon)
+    # blade = all_data[token][HONOR_BLADE]
+    # if blade and blade not in participants:
+    #     participants.append(blade)
+    for honor in HONORS:
+        name = all_data[token][honor]
+        if name and name not in participants:
+            participants.append(name)
     for name in all_data[token]['killings']:
         if name not in participants:
             participants.append(name)
