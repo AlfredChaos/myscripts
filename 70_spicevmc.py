@@ -1,21 +1,19 @@
 #!/usr/bin/python3
 
+import sys
 import hooking
 
+try:
+    domxml = hooking.read_domxml()
+    redirdevs = domxml.getElementsByTagName('redirdev')
 
-def remove_address(domxml):
-    for redirdev in domxml.getElementsByTagName('redirdev'):
-        # 找到address元素并删除
-        address = redirdev.getElementsByTagName('address')[0]
+    for redirdev in redirdevs:
+        sys.stderr.write("--usb redirdev = %s--" % redirdev.toxml())
+        address = redirdev.getElementsByTagName('address')
         if address:
+            address = address[0]
             redirdev.removeChild(address)
 
-
-def main():
-    domxml = hooking.read_domxml()
-    remove_address(domxml)
     hooking.write_domxml(domxml)
-
-
-if __name__ == '__main__':
-    main()
+except:
+    sys.stderr.write("--usb port remove failed!!--")
