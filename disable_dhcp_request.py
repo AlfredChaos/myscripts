@@ -24,29 +24,28 @@ def execute(commands):
     return res
 
 
-def get_dhcp_security_rule(southbound, port):
-    command_str = "iptables -nvL --line-number | grep " + f"\"{southbound} udp dpt:{port}\" | " + "awk '{print $1}'"
-
+def get_dhcp_security_rule(dh_namespace, port):
+    command_str = f"iptables -nvL --line-number | grep {dh_namespace} | grep dpt:{port} | " + "awk '{print $1}'"
     rule_number = execute([command_str])
     return rule_number
 
 
-def disable_dhcp_request(southbound):
-    if not get_dhcp_security_rule(southbound, SERVER_PORT):
+def disable_dhcp_request(southbound, dh_namespace):
+    if not get_dhcp_security_rule(dh_namespace, SERVER_PORT):
         execute(
-            [f"iptables -I FORWARD -m physdev --physdev-in {southbound} -p udp --dport 67 -j DROP"])
+                [f"iptables -I FORWARD -m physdev --physdev-in {southbound} -p udp --dport 67 -m comment --comment \"from {dh_namespace}\" -j DROP"])
 
-    if not get_dhcp_security_rule(southbound, CLIENT_PORT):
+    if not get_dhcp_security_rule(dh_namespace, CLIENT_PORT):
         execute(
-            [f"iptables -I FORWARD -m physdev --physdev-in {southbound} -p udp --dport 68 -j DROP"])
+            [f"iptables -I FORWARD -m physdev --physdev-in {southbound} -p udp --dport 68 -m comment --comment \"from {dh_namespace}\" -j DROP"])
 
 
-def enable_dhcp_request(southbound):
-    number = get_dhcp_security_rule(southbound, SERVER_PORT)
+def enable_dhcp_request(dh_namespace):
+    number = get_dhcp_security_rule(dh_namespace, SERVER_PORT)
     if number:
         execute(
             [f"iptables -D FORWARD {number}"])
-    number = get_dhcp_security_rule(southbound, CLIENT_PORT)
+    number = get_dhcp_security_rule(dh_namespace, CLIENT_PORT)
     if number:
         execute(
             [f"iptables -D FORWARD {number}"])
@@ -54,4 +53,4 @@ def enable_dhcp_request(southbound):
 
 if __name__ == '__main__':
     southbound = 'bond0.1509'
-    enable_dhcp_request(southbound)
+    disable_dhcp_request(southbound, 'dhcp')
