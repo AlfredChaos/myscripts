@@ -1,4 +1,4 @@
-import unicorn
+import uvicorn
 
 from typing import Union
 
@@ -31,4 +31,4 @@ def update_item(item_id: int, item: Item):
 
 
 if __name__ == "__main__":
-    unicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
