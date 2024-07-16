@@ -8,6 +8,7 @@ port2='p2'
 listen_addr='192.168.1.1'
 netns.create(namespace)
 network='ovirtmgmt'
+
 with IPRoute() as ipr:
     ipr.link('add', ifname=port1, kind='veth', peer=port2)
     port1_index = ipr.link_lookup(ifname=port1)[0]
