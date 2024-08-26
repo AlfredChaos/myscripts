@@ -1,6 +1,6 @@
 #!/bin/bash
 
-
+# 打包脚本
 VDSM_PATH="/root/vdsm-4.50.3.4/"
 VDSM_RPMS_PATH="/root/vdsm-4.50.3.4/build/RPMS/"
 HOST_PASSWD=root
