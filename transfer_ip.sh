@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # 起始IP地址
-start_ip="10.127.72.21"
+start_ip="10.127.72.51"
 # 结束IP地址
-end_ip="10.127.72.30"
+end_ip="10.127.72.60"
 HOST_PASSWD=Qjcloud.node@123
 HOST_PORT=22
 
@@ -43,5 +43,7 @@ end_ip_int=$(get_ip_int "$end_ip")
 for (( ip_int=start_ip_int; ip_int<=end_ip_int; ip_int++ )); do
     # 将整数转换回IP地址
     ip=$(int_to_ip "$ip_int")
+    echo ""
+    echo "++++++++++++Current Update $ip+++++++++++++++++++++"
     deploy "$ip"
 done
